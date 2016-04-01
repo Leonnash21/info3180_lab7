@@ -19,3 +19,7 @@ mock
 # Production Server
 # ----------------------
 gunicorn
+
+
+requests
+BeautifulSoup

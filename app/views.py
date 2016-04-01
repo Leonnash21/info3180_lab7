@@ -19,12 +19,62 @@ from app.forms import LoginForm
 from flask.ext.login import login_user, logout_user, current_user, login_required
 from app import app, db, lm, oid
 from app import oid, lm
+import requests
+import BeautifulSoup
+import urlparse
+from app import app, db
+from flask import render_template, request, redirect, url_for, Flask, flash, jsonify
+
 
 class ProfileForm(Form):
      first_name = TextField('First Name', validators=[Required()])
      last_name = TextField('Last Name', validators=[Required()])
      # evil, don't do this
      image = TextField('Image', validators=[Required(), Email()])
+
+# def scraper():
+#     url = "http://www.amazon.com/gp/product/1783551623"
+#     result = requests.get(url)
+#     soup = BeautifulSoup.BeautifulSoup(result.text)
+#     og_image = (soup.find('meta', property='og:image') or
+#                     soup.find('meta', attrs={'name': 'og:image'}))
+#     if og_image and og_image['content']:
+#         print og_image['content']
+
+#     thumbnail_spec = soup.find('link', rel='image_src')
+#     if thumbnail_spec and thumbnail_spec['href']:
+#         print thumbnail_spec['href']
+
+@app.route('/images/', methods=['GET', 'POST'])
+def image_dem():
+    imageList = []
+    url = "http://www.amazon.com/gp/product/1783551623"
+    result = requests.get(url)
+    soup = BeautifulSoup.BeautifulSoup(result.text)
+    og_image = (soup.find('meta', property='og:image') or
+                    soup.find('meta', attrs={'name': 'og:image'}))
+    if og_image and og_image['content']:
+        return og_image['content']
+
+    thumbnail_spec = soup.find('link', rel='image_src')
+    if thumbnail_spec and thumbnail_spec['href']:
+        return thumbnail_spec['href']
+        
+    # image = """<img src="%s"><br />"""
+    for img in soup.findAll("img", src=True):
+       if "sprite" not in img["src"]:
+           image_url = img["src"]
+           imageList.append({'Image':image_url})
+        #   results= image % urlparse.urljoin(url, img["src"])
+            
+           
+    if request.headers['Content-Type']=='application/json' or request.method == 'POST':
+        return jsonify(thumbnails=imageList)
+               
+            
+    return render_template('images.html', imageList=imageList)
+        
+
 
 
 @app.before_request
